@@ -1,0 +1,3 @@
+Linux - debian
+==============
+apt-get install libusb-1.0-0-dev libusb-1.0-0 libpopt0
