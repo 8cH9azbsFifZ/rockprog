@@ -1,0 +1,84 @@
+
+Update 2011-05-28
+-----------------
+Es gibt eine neue Version "rockprog0.exe" die auf der libusb-0.1
+aufbaut. Damit entfällt das umständliche Austauschen der Treiber
+wie es unten beschrieben ist.
+
+Die rockprog0.exe kann problemlos anstelle der bisherigen
+rockprog.exe verwendet werden.
+
+
+
+---------------------------------------------------------------------
+
+Anwendungshinweis Rockprog / Windows
+------------------------------------
+
+Rockprog spricht mit dem FiFi-SDR unter Verwendung der "libusb-1.0",
+während der existierende Treiber ( O28.inf etc.) auf "libusb 0.1"
+aufbaut.
+Daher muss bis auf weiteres vor Verwendung von "rockprog" der
+vorhandene Treiber von "libusb 0.1" auf "libusb-1.0" aktualisiert
+werden. Nach Verwendung von Rockprog sollte wieder auf "libusb 0.1"
+umgestellt werden, da es ansonsten sein kann, dass das SDR nicht mehr
+angesprochen werden kann.
+(Ausnahme: Man installiert den libusb-win32 filter Treiber
+ von http://sourceforge.net/apps/trac/libusb-win32/wiki . Mit diesem
+ kann das Gerät weiterhin angesprochen werden)
+
+Vorgehensweise (XP):
+1. Im Gerätemanager das SDR auswählen und per Rechtsklick
+   "Aktualisieren..." wählen
+
+2. Im nächsten Dialog "Soll eine Verbindung mit Windows Update..." usw.
+   "Nein, diesmal nicht" auswählen und auf "Weiter" klicken.
+
+3. Unter "Wie möchten Sie vorgehen" den Punkt "Software von einer
+   Liste oder bestimmten Quelle installieren (für fortgeschrittene
+   Benutzer)" auswählen und auf "Weiter" klicken.
+
+4. Im folgenden Dialog den Punkt "Nicht suchen, sondern den zu
+   installierenden Treiber selbst wählen" auswählen und auf
+   "Weiter" klicken.
+
+5. Anschließend auf "Datenträger..." klicken und das Verzeichnis
+   mit dem "libusb-1.0" Treiber auswählen ("Software\User-Software\
+   Windows-Treiber_libusb1.0" in der FiFiSDR Versionsverwaltung).
+   Auf "OK" und anschließend auf "Weiter" klicken.
+
+   Der libusb-1.0 Treiber wird nun installiert.
+   Anschließend kann "rockprog" von der Kommandozeile
+   ("Start"->"Ausführen"->"cmd", anschließend mit "cd <Verzeichnis>"
+   ins Verzeichnis von rockprog wechseln) verwendet werden.
+   Zum testen kann "rockprog --i2c" ausgeführt werden. Ist das SDR
+   angeschlossen sollte rockprog die I2C Adresse des SI570 anzeigen
+   ("0x55" bis Hardware Version 1.0).
+   
+
+   ====
+
+Rückkehr zu "libusb 0.1":
+
+1. Im Gerätemanager das SDR auswählen und in den Eigenschaften
+   unter "Treiber" auf "Aktualisieren..." klicken
+
+2. Im nächsten Dialog "Soll eine Verbindung mit Windows Update..." usw.
+   "Nein, diesmal nicht" auswählen und auf "Weiter" klicken.
+
+3. Unter "Wie möchten Sie vorgehen" den Punkt "Software von einer
+   Liste oder bestimmten Quelle installieren (für fortgeschrittene
+   Benutzer)" auswählen und auf "Weiter" klicken.
+
+4. Im folgenden Dialog den Punkt "Nicht suchen, sondern den zu
+   installierenden Treiber selbst wählen" auswählen und auf
+   "Weiter" klicken.
+
+5. Anschließend den alten Treiber (Softrock) aus der Liste wählen
+   (hier sollten sowohl der alte als auch der neue Treiber zu sehen sein).
+   Auf "OK" und anschließend auf "Weiter" klicken.
+
+   Der libusb 0.1 Treiber wird nun installiert.
+   Anschließend sollte das Radio wie zuvor mit WinRad etc. einsetzbar
+   sein.
+

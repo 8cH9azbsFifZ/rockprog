@@ -1,0 +1,35 @@
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/fifisdr/svn/!svn/ver/270/trunk/Software/User-Software/rockprog-win32/src
+END
+softrock.h
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/fifisdr/svn/!svn/ver/270/trunk/Software/User-Software/rockprog-win32/src/softrock.h
+END
+global.h
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/fifisdr/svn/!svn/ver/161/trunk/Software/User-Software/rockprog-win32/src/global.h
+END
+rockprog.c
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/fifisdr/svn/!svn/ver/270/trunk/Software/User-Software/rockprog-win32/src/rockprog.c
+END
+softrock.c
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/fifisdr/svn/!svn/ver/270/trunk/Software/User-Software/rockprog-win32/src/softrock.c
+END
+Makefile
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/fifisdr/svn/!svn/ver/251/trunk/Software/User-Software/rockprog-win32/src/Makefile
+END

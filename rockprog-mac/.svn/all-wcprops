@@ -1,0 +1,41 @@
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/fifisdr/svn/!svn/ver/239/trunk/Software/User-Software/rockprog-mac
+END
+softrock.h
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/fifisdr/svn/!svn/ver/224/trunk/Software/User-Software/rockprog-mac/softrock.h
+END
+global.h
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/fifisdr/svn/!svn/ver/162/trunk/Software/User-Software/rockprog-mac/global.h
+END
+rockprog
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/fifisdr/svn/!svn/ver/239/trunk/Software/User-Software/rockprog-mac/rockprog
+END
+rockprog.c
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/fifisdr/svn/!svn/ver/224/trunk/Software/User-Software/rockprog-mac/rockprog.c
+END
+softrock.c
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/fifisdr/svn/!svn/ver/224/trunk/Software/User-Software/rockprog-mac/softrock.c
+END
+Makefile
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/fifisdr/svn/!svn/ver/162/trunk/Software/User-Software/rockprog-mac/Makefile
+END
