@@ -198,7 +198,7 @@ int main (int argc, char *argv[])
         { "ppm", '\0', POPT_ARG_LONG, &cmdline_ppm, 0,
                 "ppm-Wert (für --smooth)" },
         { "autotune", '\0', POPT_ARG_NONE, &cmdline_autotune, 0,
-                "Qurzfrequenz automatisch abgleichen" },
+                "Quarzfrequenz automatisch abgleichen" },
         POPT_AUTOHELP
         { NULL, POPT_ARG_NONE, 0, NULL, 0 }
     };
