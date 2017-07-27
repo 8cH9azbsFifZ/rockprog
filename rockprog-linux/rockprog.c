@@ -28,6 +28,9 @@ struct libusb_device_handle *fifisdr;
 int cmdline_write = false;
 long cmdline_vid = 0x16C0;
 long cmdline_pid = 0x05DC;
+char *cmdline_manufacturer_string = "www.ov-lennestadt.de";
+char *cmdline_serial_string = "";
+int cmdline_list_devices = false;
 int cmdline_abpf = false;
 long cmdline_index = -1;
 double cmdline_freq = -999.0;
@@ -48,11 +51,7 @@ int cmdline_virtual_vco_factor = false;
 long cmdline_factor = -1;
 int cmdline_startup = false;
 int cmdline_version = false;
-#if __linux__
-const char rockprog_version[] = "260 02.01.2011";   // Datum als Versionsnummer
-#else
-const char rockprog_version[] = "250/250 29.12.2010";   // Datum als Versionsnummer
-#endif
+const char rockprog_version[] = "06.08.2016";   // Datum als Versionsnummer
 int cmdline_smoothtune = false;
 long cmdline_ppm = -1;
 int cmdline_autotune = false;
@@ -106,15 +105,19 @@ void print_usb_error (int error)
 
 
 /* FiFi-SDR suchen und öffnen */
-bool such_fifi (void)
+bool such_fifi (bool listOnly)
 {
     struct libusb_device **devices;                 /* Geräteliste */
     ssize_t cnt;                                    /* Anzahl Geräte */
     ssize_t n;
     struct libusb_device *device;
     struct libusb_device_descriptor desc_device;
+    struct libusb_device_handle *handle;
     int error;
+    int iString;
+    char device_string[100];
     bool found;
+    bool stringsOk;
 
 
     /* Info über alle angeschlossenen Geräte holen */
@@ -127,35 +130,77 @@ bool such_fifi (void)
 
     /* Ist ein passendes Gerät dabei? */
     found = false;
-    for (n = 0; n < cnt; n++)
-    {
+    for (n = 0; n < cnt; n++) {
         /* Geräteinfo holen */
         device = devices[n];
-
-        /* Prüfen ob dies das passende Gerät ist */
         error = libusb_get_device_descriptor (device, &desc_device);
-        if (error != 0)
-        {
-            printf ("Kann Device Descriptor nicht lesen\n");
-            break;
-        }
-        if ((cmdline_vid == desc_device.idVendor) &&
-            (cmdline_pid == desc_device.idProduct))
-        {
-            found = true;
-            break;
-        }
-    }
+        if (error == 0) {
+            /* VID und PID müssen in jedem Fall passen */
+            if ((cmdline_vid == desc_device.idVendor) &&
+                (cmdline_pid == desc_device.idProduct)) {
 
-    /* Kann es los gehen? */
-    if (found)
-    {
-        error = libusb_open (device, &fifisdr);
-        if (error != 0)
-        {
-            print_usb_error (error);
-            printf ("libusb_open() fehlgeschlagen\n");
-            found = false;
+                /* Device öffnen um Strings lesen zu können */
+                error = libusb_open(device, &handle);
+                if (error == 0) {
+                    stringsOk = false;
+
+                    /* Manufacturer-String abfragen um FiFi-SDR von anderen Libusb-Geräten zu unterscheiden */
+                    iString = desc_device.iManufacturer;
+                    if (iString != 0) {
+                        /* Manufacturer-String enthält reine ASCII-Zeichen */
+                        error = libusb_get_string_descriptor_ascii(handle, iString, (unsigned char *)device_string, sizeof(device_string));
+                        if (error > 0) {
+                            /* Der String muß genau stimmen */
+                            if (!strcmp(device_string, cmdline_manufacturer_string)) {
+                                stringsOk = true;
+                            }
+                        }
+                    }
+
+                    /* Seriennummer lesen wenn möglich */
+                    iString = desc_device.iSerialNumber;
+                    if (iString == 0) {
+                        if (listOnly) {
+                            printf("FiFi-SDR ohne Seriennummer...\n");
+                        }
+                    }
+                    else {
+                        /* Serial-String enthält reine ASCII-Zeichen */
+                        error = libusb_get_string_descriptor_ascii(handle, iString, (unsigned char *)device_string, sizeof(device_string));
+                        if (error > 0) {
+                            if (listOnly) {
+                                printf("%s\n", device_string);
+                            }
+                        }
+                    }
+
+                    /* Wenn eine Seriennummer angegeben ist, dann diese zur Auswahl heranziehen */
+                    if (strlen(cmdline_serial_string) > 0) {
+                        if (iString == 0) {
+                            /* Device hat keine Seriennummer */
+                            printf("FiFi-SDR hat keine Seriennummer (iSerial = 0)\n");
+                            stringsOk = false;
+                        }
+                        else {
+                            /* Der vorgegebene String muß in der tatsächlichen Seriennummer enthalten sein */
+                            stringsOk = strstr(device_string, cmdline_serial_string) ? true : false;
+                        }
+                    }
+
+                    /* Device merken falls alle Angaben stimmen */
+                    if (stringsOk && !listOnly) {
+                        fifisdr = handle;
+                        found = true;
+                        break;
+                    }
+
+                    libusb_close(handle);
+                }
+                else {
+                    print_usb_error (error);
+                    printf ("libusb_open() fehlgeschlagen\n");
+                }
+            }
         }
     }
 
@@ -181,6 +226,12 @@ int main (int argc, char *argv[])
                 "Werte schreiben" },
         { "vid", '\0', POPT_ARG_LONG, &cmdline_vid, 0,
                 "USB-PID des FiFi-SDR (Vorgabe: 0x16C0)" },
+        { "manufacturer", '\0', POPT_ARG_STRING, &cmdline_manufacturer_string, 0,
+                "Manufacturer-String (Vorgabe: www.ov-lennestadt.de)" },
+        { "serial", '\0', POPT_ARG_STRING, &cmdline_serial_string, 0,
+                "Mehrere FiFi-SDRs: (Teil-)String der Seriennummer" },
+        { "list", 'l', POPT_ARG_NONE, &cmdline_list_devices, 0,
+                "Zeige Liste aller angeschlossenen FiFi-SDRs" },
         { "pid", '\0', POPT_ARG_LONG, &cmdline_pid, 0,
                 "USB-VID des FiFi-SDR (Vorgabe: 0x05DC)" },
         { "abpf", '\0', POPT_ARG_NONE, &cmdline_abpf, 0,
@@ -242,7 +293,7 @@ int main (int argc, char *argv[])
         { "demod", '\0', POPT_ARG_NONE, &cmdline_demod, 0,
                 "Demodulator" },
         { "demodmode", '\0', POPT_ARG_STRING, &cmdline_demodmode, 0,
-                "Demodulator-Modus (LSB, USB, AM)" },
+                "Demodulator-Modus (LSB, USB, AM, FM, WBFM)" },
         { "offset", '\0', POPT_ARG_NONE, &cmdline_offset, 0,
                 "Offset (mit --subtract und --multiply)" },
         { "subtract", '\0', POPT_ARG_DOUBLE, &cmdline_subtract, 0,
@@ -261,30 +312,27 @@ int main (int argc, char *argv[])
     poptSetOtherOptionHelp( optCon, " [options]" );
 
     /* Kurz-Hilfe, wenn gar keine Argumente angegeben werden. */
-    if (argc < 2)
-    {
+    if (argc < 2) {
         poptPrintUsage( optCon, stderr, 0 );
         return 1;
     }
 
     /* Optionskürzel abfragen */
-    char c;
-    while ((c = poptGetNextOpt(optCon)) >= 0)
-    {
+    int rc;
+    while ((rc = poptGetNextOpt(optCon)) >= 0) {
 	}
 
-    /* Prüfen, ob ein Fehler bei der Bearbeitung der Optionen aufgetreten ist. */
-    if( c < -1 )
-    {
-        printf ("\"%s\" %s\n", poptBadOption( optCon, POPT_BADOPTION_NOALIAS ), poptStrerror(c) );
+    /* Prüfen, ob ein Fehler bei der Bearbeitung der Optionen aufgetreten ist. (-1 ist ok!) */
+    if (rc < -1) {
+        printf("\"%s\" %s\n", poptBadOption(optCon, POPT_BADOPTION_NOALIAS ), poptStrerror(rc));
         return 1;
     }
 
-    poptFreeContext( optCon );
+    poptFreeContext(optCon);
 
     if (cmdline_version)
     {
-        printf( "%s",rockprog_version);
+        printf( "%s\n",rockprog_version);
     }
 
     /* libusb initialisieren */
@@ -295,7 +343,7 @@ int main (int argc, char *argv[])
     }
 
     /* FiFi-SDR suchen und öffnen */
-    if (such_fifi())
+    if (such_fifi(cmdline_list_devices))
     {
         ok = true;
 
@@ -722,24 +770,43 @@ int main (int argc, char *argv[])
                 /* Mit Quarzfrequenz kann noch die echte RX-Frequenz bestimmt werden. */
                 double rxfreq = 0.0;
                 double xtal = 114.285;  /* Mit nomineller Quarzfrequenz rechnen! */
-                rxfreq = ((rfreq * xtal) / (hs_div * n1)) / 4.0;
+                rxfreq = ((rfreq * xtal) / (hs_div * n1));
 
-                /* Annahme: Startup-Frequenz ist im Raster 5 kHz.
+                /* Annahme: Startup-Frequenz ist im Raster 100 kHz.
                  * Abweichung von rxfreq zu diesem Raster bestimmen. Daraus Korrekturfaktor für XTAL ableiten.
                  * (Per Kommandozeile kann geratene Sollfrequenz überschrieben werden).
                  */
-                double rasterfreq = (double)((uint32_t)((rxfreq + 0.0025) / 0.005)) * 0.005;
+                double rasterfreq = (double)((uint32_t)((rxfreq + 0.05) / 0.1)) * 0.1;
                 if (cmdline_freq >= 0.0) {
                     rasterfreq = cmdline_freq;
                 }
                 double newxtal = xtal * (rasterfreq / rxfreq);
+                bool xtalInRange = (newxtal >= 113.0) && (newxtal <= 115.0);
+
+                /* Wenn jemand die RX-Frequenz angegeben hat, dann kann evtl. der Vierfache Wert zum Ziel führen. */
+                if (!xtalInRange) {
+                    if (cmdline_freq >= 0.0) {
+                        double newxtal4 = xtal * ((4.0 * rasterfreq) / rxfreq);
+                        xtalInRange = (newxtal4 >= 113.0) && (newxtal4 <= 115.0);
+                        if (xtalInRange) {
+                            rasterfreq = 4.0 * rasterfreq;
+                            newxtal = newxtal4;
+                        }
+                    }
+                }
 
                 if (cmdline_write) {
-                    softrock_write_xtal (fifisdr, newxtal);
+                    if (!xtalInRange) {
+                        printf("Unzulässiger XTAL-Wert (%f MHz) NICHT geschrieben. (113 MHz <= XTAL <= 115 MHz)\n",
+                               newxtal);
+                    }
+                    else {
+                        softrock_write_xtal (fifisdr, newxtal);
+                    }
                 }
                 else {
-                    printf ("Factory-Startup: %f MHz, Vorschlag: XTAL=%f\n",
-                             rxfreq, newxtal);
+                    printf("Factory-Startup: %f MHz (soll: %f MHz), Vorschlag: XTAL=%f\n",
+                           rxfreq, rasterfreq, newxtal);
                 }
             }
         }
@@ -803,10 +870,16 @@ int main (int argc, char *argv[])
 			if (!strcmp(cmdline_demodmode, "am") || !strcmp(cmdline_demodmode, "AM")) {
 				demodMode = 2;
 			}
+			if (!strcmp(cmdline_demodmode, "fm") || !strcmp(cmdline_demodmode, "FM")) {
+				demodMode = 3;
+			}
+			if (!strcmp(cmdline_demodmode, "wbfm") || !strcmp(cmdline_demodmode, "WBFM")) {
+				demodMode = 4;
+			}
 
 			if (cmdline_write) {
 				if (demodMode == 255) {
-					printf("Kein Modus (\"LSB\", \"USB\", \"AM\") angegeben\n");
+					printf("Kein Modus (\"LSB\", \"USB\", \"AM\", \"FM\", \"WBFM\") angegeben\n");
 				}
 	        	softrock_write_demodulator_mode(fifisdr, demodMode);
 			}
@@ -818,6 +891,7 @@ int main (int argc, char *argv[])
 						case 1: modeName = "USB"; break;
 						case 2: modeName = "AM"; break;
 						case 3: modeName = "FM"; break;
+						case 4: modeName = "WBFM"; break;
 					}
 					printf("Demodulator: %s\n", modeName);
 				}
@@ -886,9 +960,10 @@ int main (int argc, char *argv[])
  
  		libusb_close (fifisdr);
     }
-    else
-    {
-        printf ("Kein passendes FiFi-SDR gefunden\n" );
+    else {
+        if (!cmdline_list_devices) {
+            printf ("Kein passendes FiFi-SDR gefunden\n" );
+        }
     }
 
     /* Nach dem Schreiben etwas warten, damit das FiFi-SDR Zeit hat das Flash zu beschreiben. */
