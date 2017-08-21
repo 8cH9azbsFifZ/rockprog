@@ -36,12 +36,22 @@ bool softrock_read_i2c (struct libusb_device_handle *sdr, uint8_t *address);
 bool softrock_read_registers (struct libusb_device_handle *sdr, uint8_t value[6]);
 bool softrock_read_virtual_registers (struct libusb_device_handle *sdr, uint8_t value[6]);
 bool softrock_write_virtual_registers (struct libusb_device_handle *sdr, uint8_t value[6]);
-bool softrock_read_virtual_vco_factor (struct libusb_device_handle *sdr, long *factor);
+bool softrock_read_virtual_vco_factor (struct libusb_device_handle *sdr, uint32_t *factor);
 bool softrock_write_virtual_vco_factor (struct libusb_device_handle *sdr, long factor);
 bool softrock_read_startup (struct libusb_device_handle *sdr, double *freq);
 bool softrock_write_startup (struct libusb_device_handle *sdr, double freq);
 bool softrock_read_smoothtune (struct libusb_device_handle *sdr, uint16_t *smoothtune);
 bool softrock_write_smoothtune (struct libusb_device_handle *sdr, uint16_t smoothtune);
 bool softrock_read_factory_default_registers (struct libusb_device_handle *sdr, uint8_t value[6]);
+bool softrock_read_version_number (struct libusb_device_handle *sdr, uint32_t *svn);
+bool softrock_read_version_string (struct libusb_device_handle *sdr, char *version, uint32_t length);
+bool softrock_read_debuginfo (struct libusb_device_handle *sdr, uint8_t *debuginfo, uint32_t length);
+bool softrock_write_volume (struct libusb_device_handle *sdr, int16_t volume);
+bool softrock_read_demodulator_mode (struct libusb_device_handle *sdr, uint8_t *mode);
+bool softrock_write_demodulator_mode (struct libusb_device_handle *sdr, uint8_t mode);
+bool softrock_read_subtract_multiply (struct libusb_device_handle *sdr, int32_t *subtract1121, uint32_t *multiply1121);
+bool softrock_write_subtract_multiply (struct libusb_device_handle *sdr, int32_t subtract1121, uint32_t multiply1121);
+bool softrock_read_bandwidth (struct libusb_device_handle *sdr, uint32_t *bandwidth);
+bool softrock_write_bandwidth (struct libusb_device_handle *sdr, uint32_t bandwidth);
 
 #endif

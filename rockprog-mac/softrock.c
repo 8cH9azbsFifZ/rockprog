@@ -75,7 +75,7 @@ void softrock_show_abpf (void)
             num_abpf);
     for (i = 0; i < num_abpf; i++)
     {
-        printf ("%2d: %lf MHz\n", i, (double)(abpf[i] / (4.0 * 32.0)));
+        printf ("%2d: %f MHz\n", i, (double)(abpf[i] / (4.0 * 32.0)));
     }
 }
 
@@ -567,7 +567,7 @@ bool softrock_write_virtual_registers (struct libusb_device_handle *sdr, uint8_t
 
 
 /* Faktor für vituellen VCO lesen */
-bool softrock_read_virtual_vco_factor (struct libusb_device_handle *sdr, long *factor)
+bool softrock_read_virtual_vco_factor (struct libusb_device_handle *sdr, uint32_t *factor)
 {
     int error;
 
@@ -709,6 +709,7 @@ bool softrock_read_smoothtune (struct libusb_device_handle *sdr, uint16_t *smoot
 }
 
 
+
 /* "Smooth-Tune" schreiben */
 bool softrock_write_smoothtune (struct libusb_device_handle *sdr, uint16_t smoothtune)
 {
@@ -763,4 +764,292 @@ bool softrock_read_factory_default_registers (struct libusb_device_handle *sdr, 
 }
 
 
+
+/* Versions-Nummer auslesen */
+bool softrock_read_version_number (struct libusb_device_handle *sdr, uint32_t *svn)
+{
+    int error;
+	uint32_t nummer;
+
+
+    error = libusb_control_transfer(
+        sdr,
+        LIBUSB_ENDPOINT_IN | LIBUSB_REQUEST_TYPE_VENDOR | LIBUSB_RECIPIENT_DEVICE,
+        0xAB, /* FiFi-SDR Extra-Befehle (lesen) */
+        0, /* wValue */
+        0, /* wIndex = 0 --> Versions-Nummer */
+        (unsigned char *)&nummer,
+        4, /* wLength */
+        100 /* timeout */
+        );
+
+    if (error < 0)
+    {
+        print_usb_error (error);
+        return false;
+    }
+
+	*svn = nummer;
+
+    return true;
+}
+
+
+
+/* Versions-String auslesen */
+bool softrock_read_version_string (struct libusb_device_handle *sdr, char *version, uint32_t length)
+{
+    int error;
+
+
+    error = libusb_control_transfer(
+        sdr,
+        LIBUSB_ENDPOINT_IN | LIBUSB_REQUEST_TYPE_VENDOR | LIBUSB_RECIPIENT_DEVICE,
+        0xAB, /* FiFi-SDR Extra-Befehle (lesen) */
+        0, /* wValue */
+        1, /* wIndex = 1 --> Versions-String */
+        (unsigned char *)version,
+        length, /* wLength */
+        100 /* timeout */
+        );
+
+    if (error < 0)
+    {
+        print_usb_error (error);
+        return false;
+    }
+
+    return true;
+}
+
+
+/* Debug-Info auslesen */
+bool softrock_read_debuginfo (struct libusb_device_handle *sdr, uint8_t *debuginfo, uint32_t length)
+{
+    int error;
+
+
+    error = libusb_control_transfer(
+        sdr,
+        LIBUSB_ENDPOINT_IN | LIBUSB_REQUEST_TYPE_VENDOR | LIBUSB_RECIPIENT_DEVICE,
+        0xAB, /* FiFi-SDR Extra-Befehle (lesen) */
+        0, /* wValue */
+        0xFFFF, /* wIndex = FFFF --> Debug-Info */
+        (unsigned char *)debuginfo,
+        length, /* wLength */
+        100 /* timeout */
+        );
+
+    if (error < 0)
+    {
+        print_usb_error (error);
+        return false;
+    }
+
+    return true;
+}
+
+
+
+/* Audio Volume schreiben */
+bool softrock_write_volume (struct libusb_device_handle *sdr, int16_t volume)
+{
+    int error;
+
+
+    error = libusb_control_transfer(
+        sdr,
+        LIBUSB_ENDPOINT_OUT | LIBUSB_REQUEST_TYPE_VENDOR | LIBUSB_RECIPIENT_DEVICE,
+        0xAC, /* FiFi-SDR Extra-Befehle (schreiben) */
+        0, /* wValue */
+        13, /* wIndex = 13 --> Volume schreiben */
+        (unsigned char *)&volume,
+        2, /* wLength */
+        100 /* timeout */
+        );
+
+    if (error < 0)
+    {
+        print_usb_error (error);
+        return false;
+    }
+
+    return true;
+}
+
+
+
+/* Debug-Info auslesen */
+bool softrock_read_demodulator_mode (struct libusb_device_handle *sdr, uint8_t *mode)
+{
+    int error;
+
+
+    error = libusb_control_transfer(
+        sdr,
+        LIBUSB_ENDPOINT_IN | LIBUSB_REQUEST_TYPE_VENDOR | LIBUSB_RECIPIENT_DEVICE,
+        0xAB, /* FiFi-SDR Extra-Befehle (lesen) */
+        0, /* wValue */
+        15, /* wIndex = 15 --> Mode */
+        (unsigned char *)mode,
+        1, /* wLength */
+        100 /* timeout */
+        );
+
+    if (error < 0)
+    {
+        print_usb_error (error);
+        return false;
+    }
+
+    return true;
+}
+
+
+
+/* Betriebsart des Demodulators setzen */
+bool softrock_write_demodulator_mode (struct libusb_device_handle *sdr, uint8_t mode)
+{
+    int error;
+
+
+    error = libusb_control_transfer(
+        sdr,
+        LIBUSB_ENDPOINT_OUT | LIBUSB_REQUEST_TYPE_VENDOR | LIBUSB_RECIPIENT_DEVICE,
+        0xAC, /* FiFi-SDR Extra-Befehle (schreiben) */
+        0, /* wValue */
+        15, /* wIndex = 15 --> Mode */
+        (unsigned char *)&mode,
+        1, /* wLength */
+        100 /* timeout */
+        );
+
+    if (error < 0)
+    {
+        print_usb_error (error);
+        return false;
+    }
+
+    return true;
+}
+
+
+
+/* Subtract/Multiply für Frequenzeinstellung lesen */
+bool softrock_read_subtract_multiply (struct libusb_device_handle *sdr, int32_t *subtract1121, uint32_t *multiply1121)
+{
+    int error;
+	uint32_t buffer[2];
+
+
+    error = libusb_control_transfer(
+        sdr,
+        LIBUSB_ENDPOINT_IN | LIBUSB_REQUEST_TYPE_VENDOR | LIBUSB_RECIPIENT_DEVICE,
+        0x39, /* Get subtract/multiply */
+        0, /* wValue */
+        0, /* wIndex = Band (hier nicht unterstützt!) */
+        (unsigned char *)buffer,
+        8, /* wLength */
+        100 /* timeout */
+        );
+
+    if (error < 0)
+    {
+        print_usb_error (error);
+        return false;
+    }
+
+	*subtract1121 = buffer[0];
+	*multiply1121 = buffer[1];
+
+    return true;
+}
+
+
+
+/* "Smooth-Tune" schreiben */
+bool softrock_write_subtract_multiply (struct libusb_device_handle *sdr, int32_t subtract1121, uint32_t multiply1121)
+{
+    int error;
+	uint32_t buffer[2];
+
+
+	buffer[0] = (uint32_t)subtract1121;
+	buffer[1] = multiply1121;
+
+    error = libusb_control_transfer(
+        sdr,
+        LIBUSB_ENDPOINT_OUT | LIBUSB_REQUEST_TYPE_VENDOR | LIBUSB_RECIPIENT_DEVICE,
+        0x31, /* Write subtract/multiply */
+        0, /* wValue */
+        0, /* wIndex */
+        (unsigned char *)buffer,
+        8, /* wLength */
+        100 /* timeout */
+        );
+
+    if (error < 0)
+    {
+        print_usb_error (error);
+        return false;
+    }
+
+    return true;
+}
+
+
+
+/* Demodulator-Bandbreite lesen */
+bool softrock_read_bandwidth (struct libusb_device_handle *sdr, uint32_t *bandwidth)
+{
+    int error;
+
+
+    error = libusb_control_transfer(
+        sdr,
+        LIBUSB_ENDPOINT_IN | LIBUSB_REQUEST_TYPE_VENDOR | LIBUSB_RECIPIENT_DEVICE,
+        0xAB, /* FiFi-SDR Extra-Befehle (lesen) */
+        0, /* wValue */
+        16, /* wIndex = 16 --> Bandbreite */
+        (unsigned char *)bandwidth,
+        4, /* wLength */
+        100 /* timeout */
+        );
+
+    if (error < 0)
+    {
+        print_usb_error (error);
+        return false;
+    }
+
+    return true;
+}
+
+
+
+/* Demodulator-Bandbreite schreiben */
+bool softrock_write_bandwidth (struct libusb_device_handle *sdr, uint32_t bandwidth)
+{
+    int error;
+
+
+    error = libusb_control_transfer(
+        sdr,
+        LIBUSB_ENDPOINT_OUT | LIBUSB_REQUEST_TYPE_VENDOR | LIBUSB_RECIPIENT_DEVICE,
+        0xAC, /* FiFi-SDR Extra-Befehle (schreiben) */
+        0, /* wValue */
+        16, /* wIndex = 16 --> Bandbreite */
+        (unsigned char *)&bandwidth,
+        4, /* wLength */
+        100 /* timeout */
+        );
+
+    if (error < 0)
+    {
+        print_usb_error (error);
+        return false;
+    }
+
+    return true;
+}
 
