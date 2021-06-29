@@ -1,0 +1,274 @@
+[[TranslatedPages]]
+
+= rockprog =
+
+== Introduction ==
+As the !FiFi SDR is compatible from a software point of view with Softrock Radio, existing tools can be used to set the common parameters. It allows, for example, the calibration of the quartz frequency to be carried out with most SDR programs, whereby the special configuration tool from PE0FKO is best suited for this.
+
+Apart from the parameters covered by Softrock, the !FiFi SDR also has other setting options, in particular for the preselector. A simple command line tool called ''rockprog'' was created to program these additional values.
+
+Rockprog is available for [http://o28.sischa.net/fifisdr/svn/trunk/Software/User-Software/rockprog-win32-0.1 Windows], [http://o28.sischa.net/fifisdr/svn/trunk/Software/User-Software/rockprog-linux Linux] and [http://o28.sischa.net/fifisdr/svn/trunk/Software/User-Software/rockprog-mac Mac].
+
+ ''NOTE:'' As the program is developed under Linux, it can happen that improvements are temporarily not included in the Windows and Mac versions.
+
+== Easy operation (only for Windows users) ==#easy
+[http://o28.sischa.net/fifisdr/svn/trunk/Software/User-Software/rockprog-win32-0.1 rockprog for Windows] includes [http://o28.sischa.net/fifisdr/svn/trunk/Software/User-Software/rockprog-win32-0.1/run_rockprog0.bat a Batch file] which allows running the most commonly needed functions of rockprog. These are:
+ * Creating of a diagnosis file to help solving problems in tickets
+ * Calibrating the SI570 oscillator
+ * Adding or Removing an 12 kHz Offset
+ * Resetting the Preselector to standard values
+When running the file you will be able to choose the above functions without the need to know about the advanced command line options.
+
+== Advanced Batch Programming ==
+
+An example of the comprehensive configuration of a !FiFi SDR with FiFi preselector:
+
+{{{
+#!/bin/sh
+
+# Automatic quartz calibration!
+rockprog -w --autotune
+
+# Preselector operation mode: 4 outputs
+rockprog -w --presel --mode=1
+
+# Switching points of the low-pass filters in the !FiFi preselector
+rockprog -w --presel --index=0 --freq-from=0     --freq-to=0.123 --pattern=1
+rockprog -w --presel --index=1 --freq-from=0.123 --freq-to=0.307 --pattern=7
+rockprog -w --presel --index=2 --freq-from=0.307 --freq-to=0.768 --pattern=0
+rockprog -w --presel --index=3 --freq-from=0.768 --freq-to=1.92  --pattern=2
+rockprog -w --presel --index=4 --freq-from=1.92  --freq-to=4.8   --pattern=6
+rockprog -w --presel --index=5 --freq-from=4.8   --freq-to=12    --pattern=5
+rockprog -w --presel --index=6 --freq-from=12    --freq-to=30    --pattern=3
+rockprog -w --presel --index=7 --freq-from=30    --freq-to=75    --pattern=4
+rockprog -w --presel --index=8 --freq-from=75    --freq-to=150   --pattern=12
+
+# Delete other table entries
+rockprog -w --presel --index=9  --freq-from=0 --freq-to=0 --pattern=0
+rockprog -w --presel --index=10 --freq-from=0 --freq-to=0 --pattern=0
+rockprog -w --presel --index=11 --freq-from=0 --freq-to=0 --pattern=0
+rockprog -w --presel --index=12 --freq-from=0 --freq-to=0 --pattern=0
+rockprog -w --presel --index=13 --freq-from=0 --freq-to=0 --pattern=0
+rockprog -w --presel --index=14 --freq-from=0 --freq-to=0 --pattern=0
+
+# Standard value for preselector outputs
+# PRESELECTOR TABLE WILL ONLY BE WRITTEN IF INDEX 15 IS USED AT THE END!
+rockprog -w --presel --index=15 --freq-from=0.0 --freq-to=500 --pattern=0
+
+# Switching limits for 3rd and 5th harmonic of the LO
+rockprog -w --3rd --freq=35.0
+rockprog -w --5th --freq=85.0
+
+# Factor between 'virtual' Si570 (register interface) and the actual RX frequency
+rockprog -w --vfact --factor=4
+}}}
+
+== The advanced options for ''rockprog'' (incomplete and shown here only as an example...) ==
+ Set RX frequency::
+ Frequency input in MHz. Note: the frequency of the Si570 is usually 4-times this RX frequency. If the RX frequency lies in the region that is intended for reception on the third or fifth harmonic of the oscillator signal, then the Si570 will be set to either 4/3 or 4/5 of the RX frequency. For example:
+{{{
+rockprog --vco -w --freq=29.29
+}}}
+
+Set an RX frequency offset:
+{{{
+rockprog --offset -w --subtract=0.012
+}}}
+
+Read the current RX frequency offset:
+{{{
+rockprog --offset
+Subtract: 0.012000 MHz, Multiply: 1.000000
+}}}
+
+ Read current RX frequency::
+{{{
+rockprog --vco
+VCO = 29.290000 MHz
+}}}
+
+ Read quartz frequency (reference)::
+{{{
+rockprog --xtal
+XTAL = 114.285000 MHz
+}}}
+
+ Adjust quartz frequency (calibrate)::
+ Note: An automatic quartz calibration using the option '''{{{--autotune}}}''' is probably simpler!
+{{{
+rockprog --xtal -w --freq=114.285
+}}}
+
+ Set the operation mode of the preselector::
+ Compatibility mode for Softrock software (ABPF):
+{{{
+rockprog --presel -w --mode=0
+}}}
+ 16 frequency ranges can be defined (15 + 1 background range). A chosen bit pattern can be output per frequency range on four GPIOs.
+{{{
+rockprog --presel -w --mode=1
+}}}
+
+ Read current preselector settings::
+    The output depends upon the chosen preselector mode.
+
+{{{
+rockprog --presel
+Preselektor-Modus = 1
+ 0:  12.000000 -  30.000000 MHz, Ausgänge = 0000b (0)
+ 1:   4.800000 -  12.000000 MHz, Ausgänge = 0010b (2)
+ 2:   1.900000 -   4.800000 MHz, Ausgänge = 0100b (4)
+ 3:   0.760000 -   1.900000 MHz, Ausgänge = 0110b (6)
+ 4:   0.300000 -   0.760000 MHz, Ausgänge = 0001b (1)
+ 5:   0.000000 -   0.300000 MHz, Ausgänge = 0011b (3)
+ 6:  49.000000 -  52.000000 MHz, Ausgänge = 0101b (5)
+ 7: 140.000000 - 150.000000 MHz, Ausgänge = 0111b (7)
+ 8:   0.000000 -   0.000000 MHz, Ausgänge = 0000b (0)
+ 9:   0.000000 -   0.000000 MHz, Ausgänge = 0000b (0)
+10:   0.000000 -   0.000000 MHz, Ausgänge = 0000b (0)
+11:   0.000000 -   0.000000 MHz, Ausgänge = 0000b (0)
+12:   0.000000 -   0.000000 MHz, Ausgänge = 0000b (0)
+13:   0.000000 -   0.000000 MHz, Ausgänge = 0000b (0)
+14:   0.000000 -   0.000000 MHz, Ausgänge = 0000b (0)
+15:   0.000000 - 500.000000 MHz, Ausgänge = 0000b (0)
+}}}
+ Although in mode 0 the values are shown, the 'ABPF' values of the original Softrock software will actually be used.
+{{{
+rockprog --presel
+Preselektor-Modus = 0 (Es gelten die Umschaltpunkte für ABPF)
+ 0:  12.000000 -  30.000000 MHz, Ausgänge = 0000b (0)
+ 1:   4.800000 -  12.000000 MHz, Ausgänge = 0010b (2)
+ 2:   1.900000 -   4.800000 MHz, Ausgänge = 0100b (4)
+ 3:   0.760000 -   1.900000 MHz, Ausgänge = 0110b (6)
+ 4:   0.300000 -   0.760000 MHz, Ausgänge = 0001b (1)
+ 5:   0.000000 -   0.300000 MHz, Ausgänge = 0011b (3)
+ 6:  49.000000 -  52.000000 MHz, Ausgänge = 0101b (5)
+ 7: 140.000000 - 150.000000 MHz, Ausgänge = 0111b (7)
+ 8:   0.000000 -   0.000000 MHz, Ausgänge = 0000b (0)
+ 9:   0.000000 -   0.000000 MHz, Ausgänge = 0000b (0)
+10:   0.000000 -   0.000000 MHz, Ausgänge = 0000b (0)
+11:   0.000000 -   0.000000 MHz, Ausgänge = 0000b (0)
+12:   0.000000 -   0.000000 MHz, Ausgänge = 0000b (0)
+13:   0.000000 -   0.000000 MHz, Ausgänge = 0000b (0)
+14:   0.000000 -   0.000000 MHz, Ausgänge = 0000b (0)
+15:   0.000000 - 500.000000 MHz, Ausgänge = 0000b (0)
+}}}
+ Here the corresponding values can be viewed: 
+
+ Read ABPF values (Softrock)::
+{{{
+rockprog --abpf
+ABPF ein, 3 Filtergrenzen
+ 0: 0.250000 MHz
+ 1: 0.500000 MHz
+ 2: 0.750000 MHz
+}}}
+
+ Set factor between virtual Si570 (register interface) and actual RX frequency::
+{{{
+rockprog -w --vfact --factor=4
+}}}
+
+ Read register of the virtual and the real Si570::
+    A RX frequency of 66 MHz is possible by reception on the 3rd harmonic of the LO. The LO will actually run at 22 MHz while a linear frequency range will be presented to the host, i.e. the required RX frequency.
+{{{
+rockprog --vregs
+Si570-Register 7-12: 0x40 0x02 0xD0 0xB9 0x7D 0xEB, HS_DIV=6, N1=1, RFREQ=45.045286100 (66.000007 MHz) (virtuell)
+
+./rockprog --regs
+Si570-Register 7-12: 0x61 0xC2 0xB1 0xEC 0xA4 0x4D, HS_DIV=7, N1=8, RFREQ=43.120273877 (22.000002 MHz)
+}}}
+
+ Only for tests and the sake of completeness: set the register of the virtual Si570 (command 0x30)::
+{{{
+rockprog -w --vregs --regset=0x01,0x02,0x03,0x04,0x05,0x06
+}}}
+
+ Autotuning the quartz frequency::
+ The Si570 has a referency quartz crystal with a nominal 114.285 MHz. To be able to set the RX frequency exactly though we need the actual quartz frequency. Often a signal with a known transmission frequency is used to determine the variation of the receiver from the frequency of the transmitter. Using this correction factor, the actual quartz frequency is calculated and set by using '''{{{./rockprog --xtal -w --freq=...}}}'''.
+
+ There is a simpler way without any measurement: the preset register values of the Si570 are read out, and from these the output frequency calculated under consideration of the nominal quartz frequency (114.285 MHz). If the intended output frequency is already known, you can calculate which frequency variation was known when programming the adjustment. The actual quartz frequency can be determined from this.
+
+ ''rockprog'' provides an estimate for the quartz frequency under the (bold) assumption that the RX frequency of the radio lies on a 5 kHz raster (Si570 on 20 kHz raster). First of all one should call up the calculated frequency:
+{{{
+rockprog --autotune
+Factory-Startup: 7.500354 MHz, Vorschlag: XTAL=114.279601
+}}}
+ If this is acceptable, the quartz frequency can be directly written:
+{{{
+rockprog --autotune -w
+}}}
+ If the correct frequency is known (or if Rockprog is evidently wrong ...) this frequency can also be entered at the same time. It then overwrites the guesstimated frequency:
+{{{
+rockprog --autotune -w --freq=7.505
+}}}
+
+ Set the switching point for reception on the 3rd harmonic of the LO::
+{{{
+rockprog --3rd -w --freq=35.0
+}}}
+
+ Set the switching point for reception on the 5th harmonic of the LO::
+{{{
+rockprog --5th -w --freq=85.0
+}}}
+
+ Read the I²C address of the Si570::
+    This address is automatically assigned by the CPU.
+{{{
+rockprog --i2c
+I2C-Adresse = 0x05
+}}}
+
+ Set startup frequency::
+ When the FiFi SDR is started up it will automatically be set to this RX frequency.
+{{{
+rockprog --startup -w --freq=15.886
+}}}
+
+ Read startup frequency::
+{{{
+rockprog --startup
+Startup-Frequenz = 15.886000 MHz
+}}}
+
+ Read SVN version of the firmware (as from SVN version 294, firmware description is currently empty)::
+{{{
+rockprog --firmware
+Firmware-Stand (SVN) = 294
+Firmware-Bezeichnung = 
+}}}
+
+ List serial numbers of all connected !FiFi-SDR's::
+{{{
+rockprog -l
+F50000004DFEEA42534D08D312120620
+F50000034DED1355534D01B81717131D
+}}}
+
+ Select a particular !FiFi-SDR from multiple connected devices (unambiguous sub-string is sufficient)::
+{{{
+rockprog --serial="34D08" --vco
+VCO = 3.537000 MHz
+}}}
+{{{
+rockprog --serial="34D01" --vco
+VCO = 21.285000 MHz
+}}}
+
+== Compile ==
+
+The sources can be obtained using SVN:
+{{{svn co http://o28.sischa.net/fifisdr/svn/trunk/Software/User-Software/rockprog-linux/ }}}
+
+=== Linux ===
+Rockprog can be translated on Linux machines by simply calling ''make''. (Note: the ''libusb-1.0'' and ''libpopt0'' libraries are required).
+
+=== Mac ===
+Apart from the development environment (Xcode, gcc, Libraries) the Libusb-1.0 and [http://pdb.finkproject.org/pdb/package.php/popt "popt"] are also required (can be obtained for example through [http://www.macports.org/ MacPorts] or [http://www.finkproject.org/ Fink]). Operation corresponds to the [wiki:Inbetriebnahme#Konfiguration Linux version].[[BR]]
+
+=== Windows === 
+[http://www.mingw.org/ MinGW and MSYS] are required and also a Windows version of [http://libusb.org/wiki/Libusb1.0 libusb-1.0], that first must be translated (instructions for this can be found under http://www.libusb.org/wiki/windows_backend). (The procedure is generally much more complicated than under Linux or OS-X and consumed a whole weekend the first time it was tried).[[BR]]
+The planned integration of a libusb-0.1 compatibility layer (in the Windows version of libusb-1.0) will obviate the need for two different drivers under Windows in the forseeable future.[[BR]]
+'''In the meantime, there is now a version of ''rockprog'' for Windows that is built on the libusb-0.1. The complex version with the libusb-1.0 is thereby superfluous.''' Here is a link to the [http://o28.sischa.net/fifisdr/svn/trunk/Software/User-Software/rockprog-win32-0.1 sources] and to the executable file [http://o28.sischa.net/fifisdr/svn/trunk/Software/User-Software/rockprog-win32-0.1/rockprog0.exe rockprog0.exe].
+
