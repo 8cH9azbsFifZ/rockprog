@@ -1,0 +1,85 @@
+[[TranslatedPages]]
+
+= Linux =
+   * [wiki:Linux#rights Access rights]
+   * [wiki:Linux#sound Sound card]
+   * [wiki:Linux#config Configuration]
+
+
+=== Access rights ===#rights
+
+In Linux the !FiFi SDR is at first unknown. Therefore when it is plugged in, it is granted standard rights that under normal conditions only allow itself (write) access to the !FiFi SDR. For example, after connection to Bus 3:
+
+{{{
+rolf@blackbox:~$ ll /dev/bus/usb/003
+total 0
+crw-rw-r-- 1 root root 189, 256 Mar  7 08:34 001
+crw-rw-r-- 1 root root 189, 299 Mar  7 13:04 044
+}}}
+
+Only itself or a member of the ''root'' group can use the device without restriction. A rule for ''udev'' allows the group assignment to be changed automatically when plugged in. The ''plugdev'' group is suitable for Debian and Ubuntu. If this group does not exist on other systems then an alternative is the users group which is usually present. The ''z90_fifisdr.rules'' file must be put into the ''/etc/udev/rules.d'' directory:
+
+{{{
+# Set access rights for FiFi SDR:
+# change group membership to 'plugdev'
+
+SUBSYSTEM!="usb", ACTION!="add", GOTO="fifisdr_usb_rules_end"
+
+ATTRS{idVendor}=="16c0", ATTRS{idProduct}=="05dc", GROUP="plugdev"
+
+LABEL="fifisdr_usb_rules_end"
+}}}
+
+It won't hurt if you inform udev about the new situation with /etc/init.d/udev reload. After re-plugging the FiFi SDR, the access rights should be correct:
+
+{{{
+rolf@blackbox:~$ ll /dev/bus/usb/003
+total 0
+crw-rw-r-- 1 root root    189, 256 Mar  7 08:34 001
+crw-rw-r-- 1 root plugdev 189, 300 Mar  7 13:15 045
+}}}
+
+
+=== Sound card ===#sound
+
+The !FiFi SDR also registers itself with the system as a sound card. Without any action, it is a pure lottery which number is assigned to this sound card by the system. If the !FiFi SDR is plugged into a running system then the sound card would get, for example, the ALSA name ''hw:1'' if the built-in sound card of the computer is called ''hw:0''. If however the !FiFi SDR is already connected when the computer is booted then the sequence can be reversed! Problems with programs such as Quisk that demand the ALSA name of the sound card be entered in their configuration file are inevitable.
+
+To force a particular numbering of the USB sound cards you can give the relevant kernel module a list of the sound cards and the desired number when loading. This works providing the sound cards can be distinguished by their manufacturer's identity (''vid'') and product identity (''pid''). The following example is valid for the FiFi SDR (VID=0x16C0, PID=0x05DC) and a hypothetical card with VID=0x1234 and PID=0x0815. A file called ''snd-usb-audio.conf'' must be created in the ''/etc/modprobe.d'' directory containing the following single line that will apply ''hw:4'' to the FiFi-SDR and ''hw:5'' to the other card:
+
+{{{
+options snd-usb-audio index=4,5 vid=0x16c0,0x1234 pid=0x05dc,0x0815
+}}}
+
+This option is only valid when the kernel module is loading. If you don't want to reboot (but if you do, see [wiki:Inbetriebnahme#Windows here]), all attached USB sound cards must first be removed and the kernel module also removed with ''modprobe -r snd-usb-audio'' before the cards are plugged in again.
+
+After plugging in the !FiFi SDR again, this should be the situation:
+
+{{{
+rolf@blackbox:~$ ll /dev/snd
+total 0
+drwxr-xr-x  2 root root          60 Mar  7 13:20 by-id
+drwxr-xr-x  2 root root          80 Mar  7 13:20 by-path
+crw-rw----+ 1 root audio   116,   0 Mar  6 19:42 controlC0
+crw-rw----+ 1 root plugdev 116, 128 Mar  7 13:20 controlC4
+crw-rw----+ 1 root audio   116,   4 Mar  6 19:42 hwC0D0
+crw-rw----+ 1 root audio   116,  24 Mar  6 19:42 pcmC0D0c
+crw-rw----+ 1 root audio   116,  16 Mar  7 13:25 pcmC0D0p
+crw-rw----+ 1 root audio   116,  25 Mar  6 19:42 pcmC0D1c
+crw-rw----+ 1 root audio   116,  17 Mar  6 19:42 pcmC0D1p
+crw-rw----+ 1 root audio   116,  26 Mar  6 19:42 pcmC0D2c
+crw-rw----+ 1 root plugdev 116, 152 Mar  7 13:20 pcmC4D0c
+crw-rw----+ 1 root audio   116,   1 Mar  6 19:42 seq
+crw-rw----+ 1 root audio   116,  33 Mar  6 19:42 timer
+}}}
+
+The fixed value can now be entered in the configuration file ''.quisk_conf.py'' of ''Quisk''.
+{{{
+name_of_sound_capt = "hw:4"
+}}}
+
+
+=== Configuration ===#config
+
+As the !FiFi SDR is compatible with the Softrock radio, existing tools to set the usual parameters can also be used. So, for example, a comparison of the quarz frequency can be carried out with most SDR programs, whereby the special configuration tool from PE0FKO is most suited.
+
+As well as the parameters handled by Softrock, the !FiFi SDR also has other settings, in particular for the preselector. The simple command line tool [wiki:rockprog] was created to enable the programming of these values.
