@@ -8,6 +8,9 @@ TAG=ghcr.io/${USER}/${REPO}/rockprog
 build:
 	docker build . -t ${TAG}:${VER} -t ${TAG}:latest
 
+run:
+	docker run --rm -it --privileged -v /dev/bus/usb:/dev/bus/usb ${TAG}:${VER} -l
+
 
 push:
 	docker push ${TAG}:${VER}
