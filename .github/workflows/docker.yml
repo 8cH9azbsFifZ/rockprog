@@ -8,6 +8,7 @@ name: Create and publish a Docker image
 on:
   push:
     branches:
+      - 'master'
       - 'main'
       - 'dev'
 
@@ -15,6 +16,9 @@ on:
       - 'v*'
       - 'v*.*'
       - 'v*.*.*'
+      - '*'
+      - '*.*'
+      - '*.*.*'
   pull_request:
     branches:
       - 'main'
@@ -54,7 +58,7 @@ jobs:
 
       - name: Extract metadata (tags, labels) for Docker
         id: meta
-        uses: docker/metadata-action@v3
+        uses: docker/metadata-action@v4
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
