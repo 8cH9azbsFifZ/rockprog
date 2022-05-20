@@ -3,7 +3,7 @@ VER=0.1.1
 # Must be LOWERCASE
 USER=8ch9azbsfifz
 REPO=rockprog
-TAG=ghcr.io/${USER}/${REPO}/rockprog
+TAG=docker.pkg.github.com/${USER}/${REPO}/rockprog
 
 build:
 	docker build . -t ${TAG}:${VER} -t ${TAG}:latest
